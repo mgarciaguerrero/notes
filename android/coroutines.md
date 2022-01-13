@@ -1,7 +1,7 @@
 # Table of Contents
 1. [Some concepts](#some-concepts)
 2. [Features](#features)
-3. [CoroutineContext](#coroutinescontext)
+3. [CoroutineContext](#coroutinecontext)
 4. [Dispatchers](#dispatchers)
 5. [CoroutineScope](#coroutinescope)
 6. [Coroutine launchers](#coroutine-launchers)
@@ -12,30 +12,30 @@
 11. [Best Practices and Recomendations](#best-practices-and-recomendations)
 12. [Sources](#sources)
 
-### Some concepts
+## Some concepts
 * A *coroutine* is a concurrency design pattern that you can use on Android to simplify code that executes asynchronously. It is conceptually similar to a thread, in the sense that it takes a block of code to run that works concurrently with the rest of the code. However, a coroutine is not bound to any particular thread. It may suspend its execution in one thread and resume in another one.
 * A suspending function is simply a function that can be paused and resumed at a later time. They can execute a long running operation and wait for it to complete without blocking.
 
-### Features
+## Features
 Coroutines is the recommended solution for asynchronous programming on Android. Noteworthy features include the following:
 * **Lightweight**: You can run many coroutines on a single thread due to support for suspension, which doesn't block the thread where the coroutine is running. Suspending saves memory over blocking while supporting many concurrent operations.
 * **Fewer memory leaks**: Use structured concurrency to run operations within a scope.
 * **Built-in cancellation support**: Cancellation is propagated automatically through the running coroutine hierarchy.
 * **Jetpack integration**: Many Jetpack libraries include extensions that provide full coroutines support. Some libraries also provide their own coroutine scope that you can use for structured concurrency.
 
-### CoroutineContext
+## CoroutineContext
 * `CoroutineContext` is just a `Map` that stores a set of `Element` objects that have a unique `Key`. 
 * `Element` is also a `CoroutineContext`and at the end it is anything a coroutine might need to run correctly, like `Job`, `Dispatcher`, `CoroutineName` (identify your coroutines for debug purposes), `CoroutineExceptionHandler`...
 * `plus` operator is not associative. context1 + context2 is not the same as context2 + context1 since all the keys from the left context will be overwritten by the keys from the right context.
 
-### Dispatchers
+## Dispatchers
 * `Main`: Use this dispatcher to run a coroutine on the main Android thread. This should be used only for interacting with the UI and performing quick work.
 * `IO`: This dispatcher is optimized to perform disk or network I/O outside of the main thread.
 * `Default` (*a.k.a.* computation): This dispatcher is optimized to perform CPU-intensive work outside of the main thread.
 
 Keep in mind that `Dispatchers.IO` shares threads with `Dispatchers.Default`.
 
-### CoroutineScope
+## CoroutineScope
 * A `CoroutineScope` is just a simple wrapper for a `CoroutineContext`. 
 * The intended purpose of a `CoroutineScope` - to enforce **structured concurrency**. It aimed for all coroutines to be launched in a defined scope, which would allow for an easy way to manage cancellation, exception handling and not allow resource leaking.
 * Considerations when creating a scope using the CoroutineScope() function: 
@@ -54,7 +54,7 @@ val scope2 = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 val scope3 = CoroutineScope(SupervisorJob() + CoroutineName("MyScope"))
 ```
 
-### Coroutine launchers
+## Coroutine launchers
 * We cannot launch a new coroutine without a scope.
 
 ```kotlin
@@ -76,7 +76,7 @@ public fun <T> CoroutineScope.async(
 
 *Note*: Deferred is just a `Job` that returns a result.
 
-### Scope builders
+## Scope builders
 * `withContext` is similar to that of `coroutineScope()`, its intended purpose is to switch context within a suspending function, not to provide a scope.
 * We need suspending scope builders because we cannot launch new coroutines outside of a coroutine scope. That also means we cannot launch new coroutines from suspending functions since they are regular functions that undergo a "minor" transformation during compilation.
 * An important thing to note about suspending scope builders is that they return only when all their child coroutines have finished. This enforces structured concurrency and adheres to one of the main ideologies of the coroutine library - that suspending functions execute sequentially, just like the regular code.
@@ -93,7 +93,7 @@ public suspend fun <T> withContext(
 ): T
 ```
 
-### Structured Concurrency
+## Structured Concurrency
 The idea behind structured concurrency is quite simple, regardless of how intimidating it might sound. It requires every coroutine to run in a defined scope that manages a parent-child relationship between coroutines. This achieves a couple of things:
 * Coroutines are always accounted for and never leak resources;
 * Parent coroutines always wait for children to complete, which makes concurrency predictable;
@@ -102,7 +102,7 @@ The idea behind structured concurrency is quite simple, regardless of how intimi
 
 To learn more about how Kotlin coroutines were designed and how structured concurrency came about, I highly recommend watching this presentation from Roman Elizarov: https://www.youtube.com/watch?v=Mj5P47F6nJg
 
-### Job
+## Job
 A `Job` is an entity with a lifecycle that acts as a handle to a coroutine. Every coroutine's `Job` goes through several states that culminate in its completion.
 
 ![image info](./pictures/job_lifecycle.jpeg)
@@ -117,17 +117,17 @@ When a coroutine has finished its work, it goes to the **Completing** state, whe
 If an exception or cancellation happens during either the **Active** or **Completing** state, the `Job` moves to the **Cancelling** state, where it awaits the cancellation of all its children.
 After all the children have finished or are cancelled, the `Job` moves to either the **Completed** or **Cancelled** state.
 
-#### Exception propagation
+### Exception propagation
 * If a child coroutine fails, it propagates the exception to its parent.
 * The parent cancels itself and consequently cancels all its children. The parent will wait in the **Cancelling** state until all the children are cancelled (important).
 * The parent propagates the exception up to its parent or throws the exception if it is a root coroutine and the exception was not caught.
 * `launch` automatically propagates exceptions when they are thrown.
 * When `async` is used as a **root coroutine**, it will rely on the user to consume the exception. The exception is thrown when `.await()` is called on the `Deferred` result. However, when using `async` as a child coroutine or inside a `coroutineScope`, the exception will be thrown without calling `.await()` and immediately propagated to the parent, even if wrapped in `try-catch`. 
 
-#### Job vs SupervisorJob
+### Job vs SupervisorJob
 A regular `Job` cancels itself and propagates exceptions all the way to the top level, while `SupervisorJob` relies on coroutines to handle their own exceptions and doesn't cancel other coroutines.
 
-### Handling exceptions
+## Handling exceptions
 * `try-catch`
 * `CoroutineExceptionHandler`
 * `runCatching`
@@ -169,7 +169,7 @@ job.invokeOnCompletion { throwable ->
 
 *Note*: `CancellationExceptions` will not get passed to a `CoroutineExceptionHandler`, therefore it should not be be relied upon as a resource clean-up mechanism. For example, a common source of bugs in Android is using a `CoroutineExceptionHandler` to revert the state of UI in case of an exception inside a ViewModel. In most cases, there is nothing wrong with that, but **keep in mind that in that case explicitly cancelling your coroutines might result in a broken UI state**.
 
-##### Suppressed exceptions
+### Suppressed exceptions
 One thing to keep in mind is that if multiple children fail with an exception, the first thrown exception will get propagated, while others exceptions will get attached to it as suppressed exceptions:
 
 ```kotlin
@@ -199,7 +199,7 @@ java.lang.IllegalStateException: First Boom!
 ```
 
 
-### Best Practices and Recomendations
+## Best Practices and Recomendations
 * The only elements you should ever consider manually adding to the context when launching a new coroutine are `CoroutineDispather` (or MainCoroutineDispatcher) and `CoroutineExceptionHandler`. In some specific debug cases, you can also use `CoroutineName`.
 * Suspending functions add a new dimension to code design. It was blocking/non-blocking without coroutines and now there is also suspending/non-suspending on top of that. To make everybody’s life simpler we use the following convention: **suspending functions do not block the caller thread**.
 The means to implement this convention are provided by the `withContext` function. (based on https://elizarov.medium.com/blocking-threads-suspending-coroutines-d33e11bf4761)
@@ -210,7 +210,7 @@ The means to implement this convention are provided by the `withContext` functio
   * When using a `CoroutineScope` you should **always** have a Job there.
 
 
-### Sources:
+## Sources:
 * https://maxkim.eu/things-every-kotlin-developer-should-know-about-coroutines-part-1-coroutinecontext
 * https://maxkim.eu/things-every-kotlin-developer-should-know-about-coroutines-part-2-coroutinescope
 * https://maxkim.eu/things-every-kotlin-developer-should-know-about-coroutines-part-3-structured-concurrency
