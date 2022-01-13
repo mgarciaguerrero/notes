@@ -1,4 +1,27 @@
-### What is a coroutine?
+# Table of Contents
+1. [Some concepts](#some-concepts)
+2. [Features](#features)
+3. [CoroutineContext](#coroutinescontext)
+4. [Dispatchers](#dispatchers)
+5. [CoroutineScope](#coroutinescope)
+6. [Coroutine launchers](#coroutine-launchers)
+7. [Scope builders](#scope-builders)
+8. [Structured Concurrency](#structured-concurrency)
+9. [Job](#job)
+10. [Handling exceptions](#handling-exceptions)
+11. [Best Practices and Recomendations](#best-practices-and-recomendations)
+12. [Sources](#sources)
+
+### Some concepts
+* A *coroutine* is a concurrency design pattern that you can use on Android to simplify code that executes asynchronously. It is conceptually similar to a thread, in the sense that it takes a block of code to run that works concurrently with the rest of the code. However, a coroutine is not bound to any particular thread. It may suspend its execution in one thread and resume in another one.
+* A suspending function is simply a function that can be paused and resumed at a later time. They can execute a long running operation and wait for it to complete without blocking.
+
+### Features
+Coroutines is the recommended solution for asynchronous programming on Android. Noteworthy features include the following:
+* **Lightweight**: You can run many coroutines on a single thread due to support for suspension, which doesn't block the thread where the coroutine is running. Suspending saves memory over blocking while supporting many concurrent operations.
+* **Fewer memory leaks**: Use structured concurrency to run operations within a scope.
+* **Built-in cancellation support**: Cancellation is propagated automatically through the running coroutine hierarchy.
+* **Jetpack integration**: Many Jetpack libraries include extensions that provide full coroutines support. Some libraries also provide their own coroutine scope that you can use for structured concurrency.
 
 ### CoroutineContext
 * `CoroutineContext` is just a `Map` that stores a set of `Element` objects that have a unique `Key`. 
@@ -6,9 +29,9 @@
 * `plus` operator is not associative. context1 + context2 is not the same as context2 + context1 since all the keys from the left context will be overwritten by the keys from the right context.
 
 ### Dispatchers
-* Main
-* IO
-* Default (a.k.a. computation)
+* `Main`: Use this dispatcher to run a coroutine on the main Android thread. This should be used only for interacting with the UI and performing quick work.
+* `IO`: This dispatcher is optimized to perform disk or network I/O outside of the main thread.
+* `Default` (*a.k.a.* computation): This dispatcher is optimized to perform CPU-intensive work outside of the main thread.
 
 Keep in mind that `Dispatchers.IO` shares threads with `Dispatchers.Default`.
 
@@ -39,10 +62,8 @@ public fun CoroutineScope.launch(
     context: CoroutineContext = EmptyCoroutineContext,
     start: CoroutineStart = CoroutineStart.DEFAULT,
     block: suspend CoroutineScope.() -> Unit
-): Job
-```
+): Job 
 
-```kotlin
 public fun <T> CoroutineScope.async(
     context: CoroutineContext = EmptyCoroutineContext,
     start: CoroutineStart = CoroutineStart.DEFAULT,
@@ -63,13 +84,9 @@ public fun <T> CoroutineScope.async(
 
 ```kotlin
 public suspend fun <R> coroutineScope(block: suspend CoroutineScope.() -> R): R
-```
 
-```kotlin
 public suspend fun <R> supervisorScope(block: suspend CoroutineScope.() -> R): R
-```
 
-```kotlin
 public suspend fun <T> withContext(
     context: CoroutineContext,
     block: suspend CoroutineScope.() -> T
@@ -100,14 +117,14 @@ When a coroutine has finished its work, it goes to the **Completing** state, whe
 If an exception or cancellation happens during either the **Active** or **Completing** state, the `Job` moves to the **Cancelling** state, where it awaits the cancellation of all its children.
 After all the children have finished or are cancelled, the `Job` moves to either the **Completed** or **Cancelled** state.
 
-##### Exception propagation
+#### Exception propagation
 * If a child coroutine fails, it propagates the exception to its parent.
 * The parent cancels itself and consequently cancels all its children. The parent will wait in the **Cancelling** state until all the children are cancelled (important).
 * The parent propagates the exception up to its parent or throws the exception if it is a root coroutine and the exception was not caught.
 * `launch` automatically propagates exceptions when they are thrown.
 * When `async` is used as a **root coroutine**, it will rely on the user to consume the exception. The exception is thrown when `.await()` is called on the `Deferred` result. However, when using `async` as a child coroutine or inside a `coroutineScope`, the exception will be thrown without calling `.await()` and immediately propagated to the parent, even if wrapped in `try-catch`. 
 
-##### Job vs SupervisorJob
+#### Job vs SupervisorJob
 A regular `Job` cancels itself and propagates exceptions all the way to the top level, while `SupervisorJob` relies on coroutines to handle their own exceptions and doesn't cancel other coroutines.
 
 ### Handling exceptions
@@ -189,14 +206,15 @@ The means to implement this convention are provided by the `withContext` functio
 * Coroutines are very cheap and we are encouraged to create them as we see fit. We can launch coroutines in different ways from many different places. Remember **Coroutines ARE light-weight**.
 * `CoroutineScope` must be bound to the lifecycle of the component. In Android, we have `viewModelScope` attached to the `ViewModel`, and `lifecycleScope` attached to the `LifecycleOwner`.
 * Two very good rules of thumb to make using coroutines predictable and avoid unintentional leaks and behaviors: (see: https://github.com/Kotlin/kotlinx.coroutines/issues/1001#issuecomment-814261687)
-  * When using a `CoroutineContext` you should **not* have a Job there.
-  * When using a `CoroutineScope` you should **always* have a Job there.
+  * When using a `CoroutineContext` you should **not** have a Job there.
+  * When using a `CoroutineScope` you should **always** have a Job there.
 
 
-Sources:
+### Sources:
 * https://maxkim.eu/things-every-kotlin-developer-should-know-about-coroutines-part-1-coroutinecontext
 * https://maxkim.eu/things-every-kotlin-developer-should-know-about-coroutines-part-2-coroutinescope
 * https://maxkim.eu/things-every-kotlin-developer-should-know-about-coroutines-part-3-structured-concurrency
 * https://maxkim.eu/things-every-kotlin-developer-should-know-about-coroutines-part-4-exception-handling
 * https://elizarov.medium.com/blocking-threads-suspending-coroutines-d33e11bf4761
 * https://kotlinlang.org/docs/coroutines-basics.html
+* https://developer.android.com/kotlin/coroutines
