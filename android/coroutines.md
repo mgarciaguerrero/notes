@@ -216,6 +216,7 @@ The means to implement this convention are provided by the `withContext` functio
 * https://maxkim.eu/things-every-kotlin-developer-should-know-about-coroutines-part-2-coroutinescope
 * https://maxkim.eu/things-every-kotlin-developer-should-know-about-coroutines-part-3-structured-concurrency
 * https://maxkim.eu/things-every-kotlin-developer-should-know-about-coroutines-part-4-exception-handling
+* https://maxkim.eu/things-every-kotlin-developer-should-know-about-coroutines-part-5-cancellation
 * https://elizarov.medium.com/blocking-threads-suspending-coroutines-d33e11bf4761
 * https://kotlinlang.org/docs/coroutines-basics.html
 * https://developer.android.com/kotlin/coroutines
