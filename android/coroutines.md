@@ -155,18 +155,6 @@ public inline fun <T, R> T.runCatching(block: T.() -> R): Result<R> {
     }
 ```
 
-* Job’s `invokeOnCompletion`
-
-```kotlin
-job.invokeOnCompletion { throwable ->
-    when (throwable) {
-        is CancellationException -> println("Job was cancelled!")
-        is Throwable -> println("Job failed with exception!")
-        null -> println("Job completed normally!")
-    }
-}
-```
-
 *Note*: `CancellationExceptions` will not get passed to a `CoroutineExceptionHandler`, therefore it should not be be relied upon as a resource clean-up mechanism. For example, a common source of bugs in Android is using a `CoroutineExceptionHandler` to revert the state of UI in case of an exception inside a ViewModel. In most cases, there is nothing wrong with that, but **keep in mind that in that case explicitly cancelling your coroutines might result in a broken UI state**.
 
 ### Suppressed exceptions
@@ -198,6 +186,19 @@ java.lang.IllegalStateException: First Boom!
  ...
 ```
 
+## Cancelation
+Like with exception propagation, cancellation in coroutines is managed by a `Job`. Moreover, cancellation is nothing more than throwing a `CancellationException`. The critical distinction here is that if a coroutine throws a `CancellationException`, it is considered to have been *cancelled normally*, while any other exception is considered a *failure*. `CancellationException`will not trigger the cancellation of its parent.
+
+A proper way to wait for a `Job`’s completion is to call `job.join()`. The `.join()` function will suspend the calling coroutine until the joined `Job` is fully completed. Keep in mind that `.join()` will always continue normally, regardless of how the joined Job has been completed, as long as the `Job` of the calling coroutine is active.
+
+### Understanding suspension points
+* Marking your own functions with the suspend modifier does not mean it will necessarily suspend a coroutine or make it cancellable. This function does not have any suspension points, and the IDE will warn you about the redundant suspend modifier. That said, if you call this function, the IDE will display the suspension symbol in the gutter regardless and it doesn’t support cancellation .
+```kotlin
+suspend fun doStuff() {
+    println("I do stuff!")
+}
+```
+* `suspendCancellableCoroutine` returns a `CancellableContinuation` for us to use `resume`, `resumeWithException` and throws `CancellationException` if the continuation is cancelled. (There is another similar function called `suspendCoroutine`. The difference between them is that `suspendCoroutine` cannot be cancelled by `Job.cancel().`)
 
 ## Best Practices and Recomendations
 * The only elements you should ever consider manually adding to the context when launching a new coroutine are `CoroutineDispather` (or MainCoroutineDispatcher) and `CoroutineExceptionHandler`. In some specific debug cases, you can also use `CoroutineName`.
