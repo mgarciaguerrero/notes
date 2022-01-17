@@ -9,8 +9,9 @@
 8. [Structured Concurrency](#structured-concurrency)
 9. [Job](#job)
 10. [Handling exceptions](#handling-exceptions)
-11. [Best Practices and Recomendations](#best-practices-and-recomendations)
-12. [Sources](#sources)
+11. [Cancelation](#cancelation)
+12. [Best Practices and Recomendations](#best-practices-and-recomendations)
+13. [Sources](#sources)
 
 ## Some concepts
 * A *coroutine* is a concurrency design pattern that you can use on Android to simplify code that executes asynchronously. It is conceptually similar to a thread, in the sense that it takes a block of code to run that works concurrently with the rest of the code. However, a coroutine is not bound to any particular thread. It may suspend its execution in one thread and resume in another one.
