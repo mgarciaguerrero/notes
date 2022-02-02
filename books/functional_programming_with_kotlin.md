@@ -7,4 +7,6 @@
 
 https://www.manning.com/books/functional-programming-in-kotlin
 
---
+---
+
+# 1.Introduction to functional programming
